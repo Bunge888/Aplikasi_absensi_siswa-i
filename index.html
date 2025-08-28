@@ -18,11 +18,11 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 20p x rgba(0, 0, 0, 0.1);
             padding: 20px;
         }
 
@@ -45,7 +45,8 @@
         .header-info {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
             margin-top: 15px;
         }
 
@@ -56,10 +57,27 @@
             font-weight: bold;
         }
 
+        .date-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .date-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
         .action-buttons {
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         button {
@@ -88,6 +106,16 @@
 
         .btn-whatsapp:hover {
             background-color: #128C7E;
+            transform: translateY(-2px);
+        }
+
+        .btn-date {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .btn-date:hover {
+            background-color: #0b7dda;
             transform: translateY(-2px);
         }
 
@@ -216,7 +244,7 @@
             font-weight: bold;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], input[type="date"], select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -243,12 +271,12 @@
         }
 
         @media (max-width: 768px) {
-            .action-buttons {
+            .action-buttons, .date-controls {
                 flex-direction: column;
                 gap: 10px;
             }
             
-            button {
+            button, .date-input {
                 width: 100%;
             }
             
@@ -259,7 +287,9 @@
             }
             
             table {
-                font-size: 14px;
+                font-size: 12px;
+                display: block;
+                overflow-x: auto;
             }
             
             th, td {
@@ -274,9 +304,16 @@
             <h1>KEHADIRAN KELAS</h1>
             <div class="header-info">
                 <div class="info-item">KELAS: <span id="kelas-display">XII RPL</span></div>
-                <div class="info-item">PEKAN KE: <span id="pekan-display">1</span></div>
+                <div class="info-item">TANGGAL: <span id="tanggal-display">-</span></div>
+                <div class="info-item">BULAN: <span id="bulan-display">-</span></div>
+                <div class="info-item">TAHUN: <span id="tahun-display">-</span></div>
             </div>
         </header>
+
+        <div class="date-controls">
+            <input type="date" id="date-picker" class="date-input">
+            <button id="set-date" class="btn-date">Atur Tanggal</button>
+        </div>
 
         <div class="action-buttons">
             <button id="tambah-siswa" class="btn-primary">Tambah Siswa</button>
@@ -409,9 +446,12 @@
         // Inisialisasi database
         function initDB() {
             if (!localStorage.getItem(dbName)) {
+                const today = new Date();
                 const initialData = {
                     kelas: "XII RPL",
-                    pekan: 1,
+                    tanggal: today.getDate(),
+                    bulan: today.getMonth() + 1, // Bulan dimulai dari 0
+                    tahun: today.getFullYear(),
                     siswa: []
                 };
                 localStorage.setItem(dbName, JSON.stringify(initialData));
@@ -422,6 +462,23 @@
         // Simpan data ke database
         function saveDB(data) {
             localStorage.setItem(dbName, JSON.stringify(data));
+        }
+        
+        // Update tampilan tanggal
+        function updateDateDisplay() {
+            const db = initDB();
+            const namaBulan = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            
+            document.getElementById('tanggal-display').textContent = db.tanggal;
+            document.getElementById('bulan-display').textContent = namaBulan[db.bulan - 1];
+            document.getElementById('tahun-display').textContent = db.tahun;
+            
+            // Set nilai date picker
+            const dateStr = `${db.tahun}-${db.bulan.toString().padStart(2, '0')}-${db.tanggal.toString().padStart(2, '0')}`;
+            document.getElementById('date-picker').value = dateStr;
         }
         
         // Render data ke tabel
@@ -563,6 +620,22 @@
             }
         }
         
+        // Set tanggal baru
+        function setNewDate() {
+            const dateInput = document.getElementById('date-picker').value;
+            if (!dateInput) return;
+            
+            const selectedDate = new Date(dateInput);
+            const db = initDB();
+            
+            db.tanggal = selectedDate.getDate();
+            db.bulan = selectedDate.getMonth() + 1;
+            db.tahun = selectedDate.getFullYear();
+            
+            saveDB(db);
+            updateDateDisplay();
+        }
+        
         // Buka modal
         function openModal(modalId) {
             document.getElementById(modalId).style.display = 'flex';
@@ -576,20 +649,20 @@
         // Bagikan ke WhatsApp
         function shareToWhatsApp() {
             const db = initDB();
+            const namaBulan = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            
             let message = `*LAPORAN ABSENSI KELAS*%0a`;
             message += `Kelas: ${db.kelas}%0a`;
-            message += `Pekan ke: ${db.pekan}%0a%0a`;
+            message += `Tanggal: ${db.tanggal} ${namaBulan[db.bulan - 1]} ${db.tahun}%0a%0a`;
             
             message += `*Daftar Absensi:*%0a`;
             
             db.siswa.forEach((siswa, index) => {
+                const totalHadir = Object.values(siswa.absensi).filter(status => status === 'hadir').length;
                 message += `${index + 1}. ${siswa.nama}%0a`;
-                message += `   Senin: ${siswa.absensi.senin ? getStatusLabel(siswa.absensi.senin) : '-'}%0a`;
-                message += `   Selasa: ${siswa.absensi.selasa ? getStatusLabel(siswa.absensi.selasa) : '-'}%0a`;
-                message += `   Rabu: ${siswa.absensi.rabu ? getStatusLabel(siswa.absensi.rabu) : '-'}%0a`;
-                message += `   Kamis: ${siswa.absensi.kamis ? getStatusLabel(siswa.absensi.kamis) : '-'}%0a`;
-                message += `   Jumat: ${siswa.absensi.jumat ? getStatusLabel(siswa.absensi.jumat) : '-'}%0a`;
-                message += `   Sabtu: ${siswa.absensi.sabtu ? getStatusLabel(siswa.absensi.sabtu) : '-'}%0a%0a`;
             });
             
             const whatsappURL = `https://wa.me/?text=${message}`;
@@ -598,8 +671,12 @@
         
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
-            // Render tabel saat halaman dimuat
+            // Inisialisasi tampilan
+            updateDateDisplay();
             renderTable();
+            
+            // Tombol set tanggal
+            document.getElementById('set-date').addEventListener('click', setNewDate);
             
             // Tombol tambah siswa
             document.getElementById('tambah-siswa').addEventListener('click', () => {
